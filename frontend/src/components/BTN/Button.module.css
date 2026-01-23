@@ -1,0 +1,52 @@
+.beerBtn {
+  position: relative;
+  width: 140px;
+  height: 60px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  overflow: hidden;
+  background: linear-gradient(180deg, #f8d477 0%, #f2a900 40%, #d88900 100%);
+}
+
+.label {
+  position: relative;
+  z-index: 2;
+}
+.bubble {
+  position: absolute;
+  bottom: -10px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  animation: bubbleUp 4s linear infinite;
+}
+.b1 {
+  left: 20%;
+  width: 8px;
+  height: 8px;
+}
+.b2 {
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  animation-delay: 1s;
+}
+.b3 {
+  left: 75%;
+  width: 10px;
+  height: 10px;
+  animation-delay: 2s;
+}
+@keyframes bubbleUp {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-70px) scale(1.2);
+    opacity: 0;
+  }
+}

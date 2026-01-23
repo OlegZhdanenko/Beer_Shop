@@ -1,0 +1,11 @@
+{
+  "name": "Beer Shop",
+  "description": "Buy beer with TON",
+  "startUrl": "https://nonveritable-maryalice-tomboyishly.ngrok-free.dev/",
+  "version": "1.0.0",
+  "iconUrl": "https://nonveritable-maryalice-tomboyishly.ngrok-free.dev/icon.png",
+  "developer": {
+    "name": "Oleg",
+    "url": "https://your-site.example"
+  }
+}
