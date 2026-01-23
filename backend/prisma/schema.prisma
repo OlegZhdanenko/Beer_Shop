@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+ 
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  CREATED
+  PAID
+  CANCELED
+  PENDING
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  telegramId String   @unique
+  username   String?
+  orders     Order[]
+  wallets    Wallet[]
+  createdAt  DateTime @default(now())
+}
+
+model Product {
+  id       Int     @id @default(autoincrement())
+  name     String  @unique
+  priceTon Float
+  orders   Order[]
+}
+model Wallet {
+  id       Int    @id @default(autoincrement())
+  address  String @unique
+  network  String
+  user     User   @relation(fields: [userId], references: [id])
+  userId   Int
+  createdAt DateTime @default(now())
+}
+model Order {
+  id          Int             @id @default(autoincrement())
+  userId      Int
+  productId   Int
+  status      OrderStatus
+  createdAt   DateTime        @default(now())
+
+  user        User            @relation(fields: [userId], references: [id])
+  product     Product         @relation(fields: [productId], references: [id])
+  transaction TonTransaction?
+}
+
+model TonTransaction {
+  id        Int      @id @default(autoincrement())
+  orderId   Int      @unique
+  hash      String   @unique
+  amountTon Float
+  status    String
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+}
