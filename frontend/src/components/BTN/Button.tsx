@@ -60,6 +60,7 @@ export default function Button({ id, product }: IButton) {
       setStatus("FAILED");
     } finally {
       setIsLoading(false);
+      toast.success("You buy one beer =)");
     }
   };
 
