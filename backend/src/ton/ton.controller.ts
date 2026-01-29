@@ -12,51 +12,46 @@ export class OrdersCronService {
     private prisma: PrismaService,
     private tonService: TonService,
   ) {}
-  // cron---------------
+
   @Cron(CronExpression.EVERY_10_SECONDS)
   async verifyPendingOrders() {
     const pendingOrders = await this.prisma.order.findMany({
       where: { status: OrderStatus.PENDING },
-      include: { product: true },
+      include: { items: { include: { product: true } } },
     });
 
     for (const order of pendingOrders) {
-      try {
-        const tx = await this.tonService.checkTonTransaction(
-          order.id,
-          order.product.priceTon,
-        );
+      const totalAmount = order.items.reduce(
+        (sum, item) => sum + item.priceTon * item.quantity,
+        0,
+      );
 
-        if (!tx) {
-          this.logger.log(`Order ${order.id} still pending`);
-          continue;
-        }
+      const tx = await this.tonService.checkTonTransaction(
+        order.id,
+        totalAmount,
+      );
+      if (!tx) continue;
 
-        await this.prisma.$transaction([
-          this.prisma.tonTransaction.upsert({
-            where: { orderId: order.id },
-            update: {
-              hash: tx.hash,
-              amountTon: tx.amountTon,
-              status: 'confirmed',
-            },
-            create: {
-              orderId: order.id,
-              hash: tx.hash,
-              amountTon: tx.amountTon,
-              status: 'confirmed',
-            },
-          }),
-          this.prisma.order.update({
-            where: { id: order.id },
-            data: { status: OrderStatus.PAID },
-          }),
-        ]);
-
-        this.logger.log(`Order ${order.id} marked as PAID`);
-      } catch (err) {
-        this.logger.error(`Error verifying order ${order.id}: ${err.message}`);
-      }
+      await this.prisma.$transaction([
+        this.prisma.tonTransaction.upsert({
+          where: { orderId: order.id },
+          update: {
+            hash: tx.hash,
+            amountTon: tx.amountTon,
+            status: 'confirmed',
+          },
+          create: {
+            orderId: order.id,
+            hash: tx.hash,
+            amountTon: tx.amountTon,
+            status: 'confirmed',
+          },
+        }),
+        this.prisma.order.update({
+          where: { id: order.id },
+          data: { status: OrderStatus.PAID },
+        }),
+      ]);
     }
   }
 }

@@ -28,17 +28,14 @@ export class TonService {
     for (const tx of transactions) {
       const inMsg = tx.inMessage;
 
-      // Перевіряємо, що inMsg існує і має потрібні поля
       if (!inMsg || inMsg.info.type !== 'internal' || !('value' in inMsg.info))
         continue;
       if (!inMsg.info.dest || !inMsg.info.dest.equals(this.receiverAddress))
         continue;
 
-      // Приводимо до числа
       const amountTon = Number((inMsg.info.value as any).coins) / 1e9;
       if (amountTon < expectedTon) continue;
 
-      // Читаємо коментар
       let comment = '';
       try {
         if (inMsg.body?.beginParse) {
@@ -48,7 +45,6 @@ export class TonService {
 
       if (comment !== `order_${orderId}`) continue;
 
-      // Type assertion для source
       const sender = (inMsg as any).source?.toString() ?? 'unknown';
 
       return {
@@ -64,13 +60,18 @@ export class TonService {
   async verifyPendingOrders() {
     const pendingOrders = await this.prisma.order.findMany({
       where: { status: OrderStatus.PENDING },
-      include: { product: true, transaction: true },
+      include: {
+        items: {
+          include: { product: true },
+        },
+        transaction: true,
+      },
     });
 
     for (const order of pendingOrders) {
       const tx = await this.checkTonTransaction(
         order.id,
-        order.product.priceTon,
+        order.items[0].product.priceTon,
       );
       if (!tx) continue;
 
@@ -112,7 +113,6 @@ export class TonService {
       const amount = Number(inMsg.value) / 1e9;
 
       if (amount === expectedAmount) {
-        // Створюємо TonTransaction
         await this.prisma.tonTransaction.create({
           data: {
             orderId,
