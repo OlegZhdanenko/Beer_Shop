@@ -18,7 +18,7 @@ interface IButton {
   product: IProduct;
 }
 
-export default function Button({ id, product }: IButton) {
+export default function Button({ id }: IButton) {
   const [orderId, setOrderId] = useState<number | null>(null);
   const [status, setStatus] = useState<"PENDING" | "PAID" | "FAILED" | null>(
     null,
@@ -39,7 +39,7 @@ export default function Button({ id, product }: IButton) {
     try {
       const { data } = await api.post("/api/order/create", {
         userId: id,
-        productId: product.id,
+        // productId: product.id,
       });
 
       setOrderId(data.orderId);

@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import { CartService } from './cart.service';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 interface ICart {
   userId: number;
@@ -10,6 +11,8 @@ interface ICartRemuve {
   userId: number;
   productId: number;
 }
+
+@UseGuards(JwtAuthGuard)
 @Controller('cart')
 export class CartControoler {
   constructor(private readonly cartServices: CartService) {}

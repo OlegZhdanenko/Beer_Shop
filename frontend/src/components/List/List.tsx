@@ -4,14 +4,14 @@ import Button from "../BTN/Button";
 import css from "./List.module.css";
 import { api } from "../../lib/axios";
 import { useTelegram } from "../../hook/telegram";
-import type { ProductInterface } from "../../types/product.dto";
+// import type { ProductInterface } from "../../types/product.dto";
 import { useTonConnectUI, useTonWallet } from "@tonconnect/ui-react";
 import { Toaster } from "react-hot-toast";
 
 export default function List() {
   const { user, initData, isReady } = useTelegram();
 
-  const [product, setProduct] = useState<ProductInterface | null>(null);
+  // const [product, setProduct] = useState<ProductInterface | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,12 +25,12 @@ export default function List() {
       try {
         await api.post("/api/auth/telegram", { initData });
 
-        const res = await api.post("/api/product/create", {
-          name: "Stella Artous",
-          priceTon: 1,
-        });
+        // const res = await api.post("/api/product/create", {
+        //   name: "Stella Artous",
+        //   priceTon: 1,
+        // });
 
-        setProduct(res.data);
+        // setProduct(res.data);
         setIsLoading(false);
       } catch (e: any) {
         setError(e.message || "Init error");
@@ -63,7 +63,7 @@ export default function List() {
     );
   }
 
-  if (!isReady || isLoading || !product) {
+  if (!isReady || isLoading) {
     return (
       <div className={css.container}>
         <BeerAnimation />
@@ -89,7 +89,7 @@ export default function List() {
           ) : (
             <>
               <p>✅ Wallet connected</p>
-              <Button id={user.id} product={product} />
+              {/* <Button id={user.id}  /> */}
             </>
           )}
         </div>

@@ -9,9 +9,12 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { WalletModule } from './wallet/wallet.module';
 import { CheckoutModule } from './checkout/checkout.module';
 import { CartModule } from './cart/cart.module';
+import { JwtModule } from '@nestjs/jwt';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
+    JwtModule.register({}),
     ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
@@ -25,6 +28,7 @@ import { CartModule } from './cart/cart.module';
     ProductModule,
     CheckoutModule,
     CartModule,
+    AuthModule,
   ],
 })
 export class AppModule {}
