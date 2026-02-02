@@ -1,38 +1,39 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { OrderStatus } from '@prisma/client';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { OrdersRepository } from './orders.repository';
 import { TonService } from 'src/ton/ton.service';
 
 @Injectable()
 export class OrdersService {
   constructor(
-    private prisma: PrismaService,
-    private tonService: TonService,
+    private readonly ordersRepository: OrdersRepository,
+    private readonly tonService: TonService,
   ) {}
 
   async createOrder(
     userId: number,
     items: { productId: number; quantity: number }[],
   ) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.ordersRepository.findUserById(userId);
     if (!user) throw new NotFoundException('User not found');
 
-    if (!items || items.length === 0)
+    if (!items || items.length === 0) {
       throw new NotFoundException('No products');
+    }
 
-    const products = await this.prisma.product.findMany({
-      where: { id: { in: items.map((i) => i.productId) } },
-    });
+    const products = await this.ordersRepository.findProductsByIds(
+      items.map((i) => i.productId),
+    );
 
-    if (products.length !== items.length)
+    if (products.length !== items.length) {
       throw new NotFoundException('Some products not found');
+    }
 
     const orderItems = items.map((i) => {
-      const product = products.find((p) => p.id === i.productId);
+      const product = products.find((p) => p.id === i.productId)!;
       return {
-        productId: product!.id,
+        productId: product.id,
         quantity: i.quantity,
-        priceTon: product!.priceTon,
+        priceTon: product.priceTon,
       };
     });
 
@@ -41,15 +42,11 @@ export class OrdersService {
       0,
     );
 
-    const order = await this.prisma.order.create({
-      data: {
-        userId: user.id,
-        status: OrderStatus.PENDING,
-        totalAmount,
-        items: { create: orderItems },
-      },
-      include: { items: { include: { product: true } } },
-    });
+    const order = await this.ordersRepository.createOrder(
+      userId,
+      orderItems,
+      totalAmount,
+    );
 
     return {
       orderId: order.id,
@@ -64,10 +61,7 @@ export class OrdersService {
   }
 
   async getOrderStatus(orderId: number) {
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-      include: { items: { include: { product: true } }, transaction: true },
-    });
+    const order = await this.ordersRepository.findOrderById(orderId);
     if (!order) throw new NotFoundException('Order not found');
 
     return {
@@ -89,47 +83,24 @@ export class OrdersService {
   }
 
   async verifyPendingOrders() {
-    const pendingOrders = await this.prisma.order.findMany({
-      where: { status: OrderStatus.PENDING },
-      include: { transaction: true },
-    });
+    const pendingOrders = await this.ordersRepository.findPendingOrders();
 
     for (const order of pendingOrders) {
       const tx = await this.tonService.checkTonTransaction(
         order.id,
         order.totalAmount,
       );
+
       if (!tx) continue;
 
-      await this.prisma.$transaction(async (txDb) => {
-        await txDb.tonTransaction.upsert({
-          where: { orderId: order.id },
-          update: {
-            hash: tx.hash,
-            amountTon: tx.amountTon,
-            status: 'confirmed',
-          },
-          create: {
-            orderId: order.id,
-            hash: tx.hash,
-            amountTon: tx.amountTon,
-            status: 'confirmed',
-          },
-        });
-
-        await txDb.order.update({
-          where: { id: order.id },
-          data: { status: OrderStatus.PAID },
-        });
+      await this.ordersRepository.markOrderAsPaid(order.id, {
+        hash: tx.hash,
+        amountTon: tx.amountTon,
       });
     }
   }
 
   async getUserOrders(userId: number) {
-    return this.prisma.order.findMany({
-      where: { userId },
-      include: { items: { include: { product: true } }, transaction: true },
-      orderBy: { createdAt: 'desc' },
-    });
+    return this.ordersRepository.findUserOrders(userId);
   }
 }

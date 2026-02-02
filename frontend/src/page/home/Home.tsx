@@ -1,4 +1,4 @@
-import List from "../components/List/List";
+import List from "../../components/List/List";
 import css from "./home.module.css";
 
 export default function Home() {

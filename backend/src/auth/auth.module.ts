@@ -4,11 +4,12 @@ import { TelegramService } from '../telegram/telegram.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
+import { AuthRepository } from './auth.repository';
 
 @Module({
   imports: [JwtModule.register({})],
   controllers: [AuthController],
-  providers: [TelegramService, PrismaService, AuthService],
+  providers: [TelegramService, PrismaService, AuthService, AuthRepository],
   exports: [TelegramService, AuthService],
 })
 export class AuthModule {}

@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { BeerAnimation } from "../BeerAnimation/BeerAnimation";
-import Button from "../BTN/Button";
+// import Button from "../BTN/Button";
 import css from "./List.module.css";
 import { api } from "../../lib/axios";
 import { useTelegram } from "../../hook/telegram";
 // import type { ProductInterface } from "../../types/product.dto";
 import { useTonConnectUI, useTonWallet } from "@tonconnect/ui-react";
 import { Toaster } from "react-hot-toast";
+import isErrorWithMessage from "../../types/isErrorWithMessage";
 
 export default function List() {
   const { user, initData, isReady } = useTelegram();
@@ -32,9 +33,14 @@ export default function List() {
 
         // setProduct(res.data);
         setIsLoading(false);
-      } catch (e: any) {
-        setError(e.message || "Init error");
-        setIsLoading(false);
+      } catch (error) {
+        if (isErrorWithMessage(error)) {
+          setError(error.message || "Init error");
+          setIsLoading(false);
+        }
+        // else{
+        //   тут добавити нотійікейшн
+        // }
       }
     })();
   }, [isReady, initData]);

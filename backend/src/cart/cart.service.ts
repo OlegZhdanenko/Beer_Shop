@@ -3,29 +3,17 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { CartRepository } from './cart.repository';
 
 @Injectable()
 export class CartService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly cartRepository: CartRepository) {}
 
   async getOrCreateCart(userId: number) {
-    let cart = await this.prisma.cart.findUnique({
-      where: { userId },
-      include: { items: { include: { product: true } } },
-    });
+    let cart = await this.cartRepository.findCartByUserId(userId);
 
     if (!cart) {
-      cart = await this.prisma.cart.create({
-        data: { userId },
-        include: {
-          items: {
-            include: {
-              product: true,
-            },
-          },
-        },
-      });
+      cart = await this.cartRepository.createCart(userId);
     }
 
     return cart;
@@ -36,36 +24,26 @@ export class CartService {
       throw new BadRequestException('Quantity must be greater than 0');
     }
 
-    const product = await this.prisma.product.findUnique({
-      where: { id: productId },
-    });
-    if (!product) throw new NotFoundException('Product not found');
+    const product = await this.cartRepository.findProductById(productId);
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
 
     const cart = await this.getOrCreateCart(userId);
 
-    const existingItem = await this.prisma.cartItem.findUnique({
-      where: {
-        cartId_productId: {
-          cartId: cart.id,
-          productId,
-        },
-      },
-    });
+    const existingItem = await this.cartRepository.findCartItem(
+      cart.id,
+      productId,
+    );
 
     if (existingItem) {
-      return this.prisma.cartItem.update({
-        where: { id: existingItem.id },
-        data: { quantity: existingItem.quantity + quantity },
-      });
+      return this.cartRepository.updateCartItemQuantity(
+        existingItem.id,
+        existingItem.quantity + quantity,
+      );
     }
 
-    return this.prisma.cartItem.create({
-      data: {
-        cartId: cart.id,
-        productId,
-        quantity,
-      },
-    });
+    return this.cartRepository.createCartItem(cart.id, productId, quantity);
   }
 
   async updateQuantity(userId: number, productId: number, quantity: number) {
@@ -75,46 +53,26 @@ export class CartService {
 
     const cart = await this.getOrCreateCart(userId);
 
-    return this.prisma.cartItem.update({
-      where: {
-        cartId_productId: {
-          cartId: cart.id,
-          productId,
-        },
-      },
-      data: { quantity },
-    });
+    return this.cartRepository.updateCartItemByCompositeKey(
+      cart.id,
+      productId,
+      quantity,
+    );
   }
 
   async removeFromCart(userId: number, productId: number) {
     const cart = await this.getOrCreateCart(userId);
 
-    return this.prisma.cartItem.delete({
-      where: {
-        cartId_productId: {
-          cartId: cart.id,
-          productId,
-        },
-      },
-    });
+    return this.cartRepository.deleteCartItem(cart.id, productId);
   }
 
   async getCart(userId: number) {
-    return this.prisma.cart.findUnique({
-      where: { userId },
-      include: {
-        items: {
-          include: { product: true },
-        },
-      },
-    });
+    return this.cartRepository.findCartByUserId(userId);
   }
 
   async clearCart(userId: number) {
     const cart = await this.getOrCreateCart(userId);
 
-    return this.prisma.cartItem.deleteMany({
-      where: { cartId: cart.id },
-    });
+    return this.cartRepository.clearCart(cart.id);
   }
 }

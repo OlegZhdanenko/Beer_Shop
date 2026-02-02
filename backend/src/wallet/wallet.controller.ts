@@ -1,6 +1,12 @@
-import { Controller, Post, Body, Headers } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Headers,
+  BadRequestException,
+} from '@nestjs/common';
 import { WalletService } from './wallet.service';
-import { BindWalletDto } from '../types/bind-wallet.dto';
+import { WalletDto } from './dto/wallet.dto';
 
 @Controller('user')
 export class WalletController {
@@ -8,10 +14,11 @@ export class WalletController {
 
   @Post('bind-wallet')
   async bindWallet(
-    @Headers('x-telegram-id') telegramId: string,
-    @Body() dto: BindWalletDto,
+    @Headers('x-telegram-id') telegramId: number,
+    @Body() dto: WalletDto,
   ) {
-    if (!telegramId) throw new Error('Telegram ID header is required');
+    if (!telegramId)
+      throw new BadRequestException('Telegram ID header is required');
 
     const wallet = await this.walletService.bindWallet(Number(telegramId), dto);
     return { success: true, wallet };
